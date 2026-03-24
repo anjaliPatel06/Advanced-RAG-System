@@ -1,0 +1,29 @@
+# Core LangChain
+langchain>=0.2.0
+langchain-community>=0.2.16
+langchain-core>=0.2.38
+langchain-text-splitters>=0.2.0
+
+# LLM & Embeddings
+langchain-groq>=0.1.0
+langchain-huggingface>=0.0.3
+langchain-pinecone>=0.1.0
+
+# ML / Reranking
+sentence-transformers>=2.7.0
+transformers>=4.40.0
+torch>=2.0.0
+
+# Vector DB
+pinecone>=3.0.0
+
+# BM25 Keyword Search
+rank_bm25>=0.2.2
+
+# Utilities
+python-dotenv>=1.0.0
+tiktoken>=0.7.0
+numpy>=1.26.0
+
+# Web UI
+streamlit>=1.35.0

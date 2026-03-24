@@ -1,0 +1,26 @@
+# 🔐 Secrets
+.env
+
+# 🐍 Python cache
+__pycache__/
+*.pyc
+
+# 📦 Virtual env
+venv/
+
+# 📊 Data (scraped files)
+data/
+
+# 🧠 Generated chunks
+chunks.pkl
+
+# 🧪 Logs
+*.log
+
+# 🖥️ IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
