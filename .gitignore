@@ -1,23 +1,21 @@
-# 🔐 Secrets
+# Secrets
 .env
 
-# 🐍 Python cache
+# Python cache
 __pycache__/
 *.pyc
 
-# 📦 Virtual env
+# Virtual env
 venv/
 
-# 📊 Data (scraped files)
+# Data (scraped files)
 data/
 
-# 🧠 Generated chunks
-chunks.pkl
 
-# 🧪 Logs
+# Logs
 *.log
 
-# 🖥️ IDE
+# IDE
 .vscode/
 .idea/
 
