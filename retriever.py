@@ -69,12 +69,14 @@ def get_relevant_docs(query):
     """
     intent = detect_query_intent(query)
 
+    # More semantic hits for procedural/error queries; balanced for others
     semantic_k = 10 if intent in ("how_to", "error") else 8
     keyword_k = 7 if intent in ("definition", "comparison") else 5
 
     semantic_docs = vector_store.similarity_search(query, k=semantic_k)
     keyword_docs = keyword_search(query, k=keyword_k)
 
+    # IMPROVED: Reciprocal Rank Fusion to merge two ranked lists
     rrf_scores = {}
     doc_map = {}
 
@@ -88,11 +90,13 @@ def get_relevant_docs(query):
     rrf_add(semantic_docs, weight=1.2)   # Slightly prefer semantic
     rrf_add(keyword_docs, weight=1.0)
 
+    # Sort by fused RRF score
     sorted_keys = sorted(rrf_scores, key=lambda k: rrf_scores[k], reverse=True)
     combined = [doc_map[k] for k in sorted_keys]
 
     combined = filter_docs_initial(combined)
 
+    # Cross-encoder reranking
     ranked_docs = rank_docs(query, combined, top_k=5)
 
     return ranked_docs

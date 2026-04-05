@@ -16,6 +16,7 @@ load_dotenv()
 
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 
+# Initialize Pinecone
 pc = Pinecone(api_key=PINECONE_API_KEY)
 
 index_name = "rag-index"
@@ -30,11 +31,15 @@ if index_name not in [i["name"] for i in pc.list_indexes()]:
 
 index = pc.Index(index_name)
 
+
+# --- IMPROVED: Extract real page URL from nav links in Crawl4AI docs ---
 def extract_page_url(text):
     """Try to extract the canonical URL this page belongs to from its nav breadcrumb."""
+    # Pattern: the last "Search" nav link often contains the current page URL
     match = re.search(r'\[ Search \]\((https://[^\)]+)\)', text)
     if match:
         return match.group(1)
+    # Fallback: first https URL found
     match = re.search(r'https://docs\.crawl4ai\.com/[^\s\)\"\']+', text)
     if match:
         return match.group(0)
@@ -48,32 +53,42 @@ def clean_text(text):
     for line in lines:
         line = line.strip()
 
+        # Remove navigation links like "* [Home](https://...)"
         if line.startswith("* [") and "](" in line:
             continue
 
+        # Remove bare URLs
         if line.startswith("http"):
             continue
 
+        # Remove stray markdown symbols
         if line in ["*", "-", "×", "---", "***", "* * *"]:
             continue
 
+        # Remove very short lines (noise)
         if len(line) < 5:
             continue
 
+        # Remove lines that are only special characters / punctuation
         if re.match(r'^[\W_]+$', line):
             continue
 
+        # Remove repeated header nav lines
         if line.count("#") > 3 and len(line) < 60:
             continue
 
+        # IMPROVED: Remove table-of-contents anchor lines like "  * [Section](#section)"
         if re.match(r'\s*\*\s*\[.+\]\(#.+\)', line):
             continue
 
         cleaned.append(line)
 
+    # Remove duplicate consecutive lines
     unique = list(dict.fromkeys(cleaned))
     return "\n".join(unique)
 
+
+# Load documents
 loader = DirectoryLoader(
     "data/scraped",
     glob="**/*.md",
@@ -84,6 +99,7 @@ loader = DirectoryLoader(
 documents = loader.load()
 print("Total documents loaded:", len(documents))
 
+# IMPROVED: Attach real page URL as metadata before cleaning
 for doc in documents:
     page_url = extract_page_url(doc.page_content)
     doc.page_content = clean_text(doc.page_content)
@@ -125,6 +141,7 @@ if len(semantic_chunks) == 0:
     for doc in documents:
         semantic_chunks.extend(small_splitter.split_documents([doc]))
 
+# IMPROVED: Deduplication by content hash to avoid duplicate chunks across files
 seen_hashes = set()
 final_chunks = []
 
@@ -136,6 +153,7 @@ for chunk in semantic_chunks:
         if len(sub) < 60:
             continue
 
+        # Hash-based deduplication
         content_hash = hashlib.md5(sub.encode()).hexdigest()
         if content_hash in seen_hashes:
             continue
@@ -162,6 +180,7 @@ vector_store = PineconeVectorStore(
 stats = index.describe_index_stats()
 
 if stats.get("total_vector_count", 0) == 0:
+    # IMPROVED: Upload in batches to avoid API timeouts
     batch_size = 100
     for i in range(0, len(final_chunks), batch_size):
         batch = final_chunks[i:i + batch_size]

@@ -18,12 +18,16 @@ def rank_docs(query, docs, top_k=5, threshold=0.3):
     pairs = [(query, d.page_content) for d in docs]
     raw_scores = reranker.predict(pairs)
 
+    # Normalize with sigmoid for consistent 0-1 range
     scores = 1 / (1 + np.exp(-np.array(raw_scores)))
 
     scored_docs = sorted(zip(scores, docs), key=lambda x: x[0], reverse=True)
 
+    # Hard filter
     filtered = [(score, doc) for score, doc in scored_docs if score > threshold]
 
+    # IMPROVED: Soft fallback — if nothing passes threshold, return top-2 anyway
+    # This prevents silent failures on valid but loosely-phrased queries
     if not filtered and scored_docs:
         filtered = list(scored_docs[:2])
 

@@ -1,5 +1,6 @@
 import re
 
+
 def rewrite_query(query, llm):
     """
     IMPROVED: Generates ONE focused expanded query instead of verbose multi-line output.
@@ -18,6 +19,7 @@ User query: {query}
 Rewritten query (one line only):"""
 
     result = llm.invoke(prompt).content.strip()
+    # IMPROVED: Strip any preamble the LLM adds like "Rewritten query: ..."
     result = re.sub(r'^(Rewritten query\s*[:\-]\s*)', '', result, flags=re.IGNORECASE)
     return result.split("\n")[0].strip()
 
@@ -33,6 +35,7 @@ def optimize_context(docs, memory, max_tokens=3000):
     seen = set()
     unique_docs = []
 
+    # Sort by length descending — more content = more useful
     sorted_docs = sorted(docs, key=lambda d: len(d.page_content), reverse=True)
 
     char_budget = max_tokens * 4  # rough chars-to-tokens ratio
@@ -65,15 +68,18 @@ def check_failure(docs, threshold=2):
     if not docs:
         return True
 
+    # Handle ranked (score, doc) tuples
     if isinstance(docs[0], tuple):
         scores = [s for s, _ in docs]
         valid = [s for s in scores if s > 0.25]
         if len(valid) < threshold:
             return True
+        # If top score is very low, it's a failure
         if max(scores) < 0.2:
             return True
         return False
 
+    # Plain doc list fallback
     valid_docs = [d for d in docs if len(d.page_content.strip()) > 50]
     return len(valid_docs) < threshold
 

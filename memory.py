@@ -8,8 +8,10 @@ from langchain_core.documents import Document  # FIXED: was missing, caused Name
 
 load_dotenv()
 
+# --- Short-term memory (in-process, session-scoped) ---
 memory_store = []
 
+# IMPROVED: Feedback log to track which answers were good/bad for self-improvement
 feedback_log = []
 
 
@@ -24,6 +26,8 @@ def update_short_memory(query, answer):
     if len(memory_store) > 20:
         memory_store.pop(0)
 
+
+# IMPROVED: Feedback tracking for self-improvement loop
 def record_feedback(query, answer, was_helpful: bool):
     """
     Called externally (e.g., from Streamlit thumbs up/down) to log answer quality.
@@ -44,6 +48,7 @@ def get_feedback_summary():
     return f"Feedback: {helpful}/{total} answers marked helpful ({100*helpful//total}%)"
 
 
+# --- Long-term memory (Pinecone-backed) ---
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 index = pc.Index("rag-index")
 

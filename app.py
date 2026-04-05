@@ -82,30 +82,39 @@ def rag_pipeline(query):
         yield "Hello! I'm your Crawl4AI documentation assistant. Ask me anything about installation, crawling, extraction, or the API!"
         return
 
+    # Step 1: Rewrite query for better retrieval
     rewritten = rewrite_query(query, llm)
     print(f"\n[Query Rewrite] {query!r} → {rewritten!r}")
 
+    # Step 2: Short-term memory
     short_memory = get_short_memory()
 
+    # Step 3: Long-term memory (past relevant answers)
     long_memory_docs = get_long_term(rewritten)
     long_memory_text = "\n".join([d.page_content for d in long_memory_docs])
 
+    # Step 4: Hybrid retrieval → reranked (score, doc) tuples
     ranked_docs = get_relevant_docs(rewritten)
 
+    # Step 5: Confidence-gated failure check
     if check_failure(ranked_docs):
         top = get_top_score(ranked_docs)
         print(f"[Failure] Top reranker score: {top:.3f} — below confidence threshold")
         yield "I don't have enough information to answer this based on the available documentation."
         return
 
+    # Step 6: Unwrap docs and optimize context
     plain_docs = extract_docs_from_ranked(ranked_docs)
     context = optimize_context(plain_docs, short_memory)
 
+    # Append long-term memory if available
     if long_memory_text.strip():
         context += f"\n\n[Past Relevant Answers]\n{long_memory_text}"
 
+    # Step 7: Detect intent for prompt shaping
     intent = detect_query_intent(query)
 
+    # Step 8: Build prompt and stream
     prompt = build_prompt(query, context, intent)
 
     print(f"\n--- CONTEXT PREVIEW ---\n{context[:800]}\n-----------------------\n")
@@ -116,6 +125,7 @@ def rag_pipeline(query):
         full_answer += token
         yield token
 
+    # Step 9: Update memories
     update_short_memory(query, full_answer)
     if is_useful_answer(full_answer):
         store_long_term(query, full_answer)
